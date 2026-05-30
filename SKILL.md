@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "3.2.0"
+  version: "3.2.1"
   model: "sonnet"
 ---
 
@@ -146,7 +146,9 @@ metadata:
 
    | 域名包含 | 前缀 | 示例 |
    |----------|------|------|
-   | `wikipedia.org` | `wiki` | `wiki-塞尔达传说.md` |
+   | `en.wikipedia.org` | `wiki-en` | `wiki-en-塞尔达传说.md` |
+   | `ja.wikipedia.org` | `wiki-jp` | `wiki-jp-ゼルダの伝説.md` |
+   | 其他 `*.wikipedia.org` | `wiki-` + 语言码 | `wiki-de-xxx.md`、`wiki-fr-xxx.md` |
    | `fandom.com` | `fandom` | `fandom-桑给巴尔事件.md` |
    | `ign.com` | `ign` | `ign-某某访谈.md` |
    | `nintendo.co.jp` / `nintendo.com` | `nintendo` | `nintendo-青沼英二访谈.md` |
