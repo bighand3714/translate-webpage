@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "2.5.0"
+  version: "3.0.0"
   model: "sonnet"
 ---
 
@@ -76,17 +76,35 @@ metadata:
    - 存在 `## 参考资料` / `## References` 标题且下方无内容（仅有空行）
    - 文末存在密集的 `[^n]:` 脚注列表
 
-   **5b. 分类脚注**：逐条检查每个 `[^n]`，按内容特征分为三类：
+   **5b. 获取区段地图（Wikipedia API）**：若来源为 Wikipedia（`wikipedia.org`），使用 MediaWiki API 获取原始页面的引用区段结构，作为重建的权威蓝图——不再靠启发式规则猜测：
+
+   1. **提取页面名**：从 URL 中提取 `/wiki/` 之后的页面标题。例如 `https://en.wikipedia.org/wiki/The_Legend_of_Zelda` → `The_Legend_of_Zelda`
+
+   2. **获取区段列表**：调用 API 获取页面所有区段：
+      ```
+      WebFetch: https://en.wikipedia.org/w/api.php?action=parse&page=页面名&prop=sections&format=json
+      ```
+      从返回的 `sections` 数组中找出标题为 `Notes`、`References`、`External links` 的区段，记录其 `index`（顺序编号）。
+
+   3. **按区段获取原始内容**：对每个目标区段，按 index 获取原始 HTML：
+      ```
+      WebFetch: https://en.wikipedia.org/w/api.php?action=parse&page=页面名&prop=text&section=区段index&format=json
+      ```
+      从返回的 `text` 中解析条目列表和标号体系（Notes 用 `[a]`/`[b]`/`[c]`，References 用 `1.`/`2.`/`3.`，References 下可能还有 `Citations` 等子标题）。
+
+   4. **映射脚注到区段**：将 API 返回的各区段条目文本与 defuddle 生成的 `[^n]:` 脚注逐一配对（按文本内容匹配），确定每个 `[^n]` 属于 Notes 还是 References。外部链接直接取自 API 返回的 External links 区段。
+
+   5. **回退方案**：非 Wikipedia 页面或 API 调用失败时，回退到内容特征分类：
 
    | 类型 | 内容特征 | 目标区段 |
    |------|----------|----------|
-   | **注释 (Notes)** | 解释性段落文字，包含多个完整句子，可能嵌入 `[^n]` 交叉引用。不含标准引文格式（作者-日期-标题-出版物） | `## 注释` |
-   | **参考资料 (References)** | 标准引文格式：作者（日期）。「标题」。*出版物*。URL/存档/检索日期。或 ISBN、PDF 链接等结构化引用数据 | `## 参考资料` |
-   | **外部链接 (External links)** | 以 `- [链接文本](url)` 列表项形式存在，不是 `[^n]:` 格式 | `## 外部链接` |
+   | **注释 (Notes)** | 解释性段落文字，包含多个完整句子，可能嵌入交叉引用 | `## 注释` |
+   | **参考资料 (References)** | 标准引文格式：作者（日期）。「标题」。*出版物*。URL/存档 | `## 参考资料` |
+   | **外部链接 (External links)** | 以 `- [链接文本](url)` 列表项形式存在 | `## 外部链接` |
 
-   **5c. 重建区段**：将分类后的条目移动到对应标题下方。参考资料部分可使用 `[^n]:` 脚注格式保留（正文中的 `[^n]` 引用仍能正确渲染），或转为编号列表。注释部分转为 `[^n]:` 格式并保留嵌入引用。
+   **5c. 重建区段**：将分类后的条目移动到对应标题下方，保留原页面的标号体系。Notes 转为带字母标记的有序列表（`a.` `b.` `c.`），References 转为带数字标记的有序列表（`1.` `2.` `3.`，若原页面有 `Citations` 子标题则保留该层级），External links 转为无序列表。正文中的 `[^n]` 脚注引用同步更新为对应区段的标号。
 
-   **5d. 验证**：重建后，三个区段标题下均应有内容。不得存在空区段标题。
+   **5d. 验证**：重建后，三个区段标题下均应有内容。Notes 区段使用字母标号、References 区段使用数字标号、External links 区段使用无序列表。不得存在空区段标题，不得存在标号体系混用。
 
 ### 第三步：生成中文标题与文件名
 
