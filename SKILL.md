@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "2.3.0"
+  version: "2.4.0"
   model: "sonnet"
 ---
 
@@ -144,7 +144,8 @@ Agent(
 
    - **结构检查**：验证 `## 注释`、`## 参考资料`、`## 外部链接` 三个标题下是否各有内容。若任一个为空，说明区段重建未完成或翻译过程中丢失了条目，必须回溯修复。
    - **内容检查**：扫描整个引用区，逐行检查是否残留未翻译的英文条目。若发现任意条目中**标题和说明文字仍为英语原文**，必须对该条目重新翻译。
-   
+   - **链接数量检查**：分别统计原文和译文中 `[` 后紧跟 `](http` 的出现次数。若两个数字不等，说明翻译过程中丢失了链接。定位丢失位置并修复。
+
    此项校验不可跳过。
 
 ---
@@ -180,7 +181,17 @@ Agent(
 
 15. **所有 Markdown 格式原样保留**：粗体 `**text**`、斜体 `*text*`、删除线 `~~text~~`、行内代码 `` `code` ``、代码块 ` ``` `、水平线 `---`。
 16. **图片**：`![alt](url)` 的 alt 文本翻译为中文，URL **原封不动**。图片前后的空行保留。
-17. **链接**：`[显示文本](url)` 的显示文本翻译为中文，URL **原封不动**。脚注 `[^1]` 和锚点链接完整保留。
+17. **链接（强制保留）**：`[显示文本](url)` 的显示文本翻译为中文，**URL 原封不动，Markdown 方括号语法一个字符都不能丢**。脚注 `[^1]` 和锚点链接完整保留。
+
+   **这是最容易出错的一条规则。翻译时只改 `[` 和 `]` 之间的显示文字，`[...](url)` 的外壳结构绝对不能碰。**
+
+   ✅ 正确：`[video game series](https://en.wikipedia.org/wiki/Media_franchise)` → `[电子游戏系列](https://en.wikipedia.org/wiki/Media_franchise)`
+   
+   ❌ 错误：`[video game series](https://en.wikipedia.org/wiki/Media_franchise)` → `电子游戏系列`（链接语法整个丢失）
+   
+   ❌ 错误：`[Shigeru Miyamoto](https://en.wikipedia.org/wiki/Shigeru_Miyamoto)` → `宫本茂（Shigeru Miyamoto）`（链接被替换为纯文本括号注）
+   
+   **链接防腐检查**：翻译完成后，原文和译文中 `[` 后紧跟 `](http` 的实例数量必须完全相等。若不等，说明翻译过程中丢失了链接，必须逐句回溯修复。
 18. **表格**：行数、列数、对齐方式不变。表头翻译，单元格内容翻译。HTML 表格转为 Markdown 表格。
 19. **数字/日期/统计**：所有数值、日期格式、百分比、单位保持原文样式，不转换格式。
 
