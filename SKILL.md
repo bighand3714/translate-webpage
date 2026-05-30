@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "3.0.0"
+  version: "3.1.0"
   model: "sonnet"
 ---
 
@@ -102,9 +102,37 @@ metadata:
    | **参考资料 (References)** | 标准引文格式：作者（日期）。「标题」。*出版物*。URL/存档 | `## 参考资料` |
    | **外部链接 (External links)** | 以 `- [链接文本](url)` 列表项形式存在 | `## 外部链接` |
 
-   **5c. 重建区段**：将分类后的条目移动到对应标题下方，保留原页面的标号体系。Notes 转为带字母标记的有序列表（`a.` `b.` `c.`），References 转为带数字标记的有序列表（`1.` `2.` `3.`，若原页面有 `Citations` 子标题则保留该层级），External links 转为无序列表。正文中的 `[^n]` 脚注引用同步更新为对应区段的标号。
+   **5c. 重建区段（独立标号体系）**：将分类后的条目移动到对应标题下方。**关键：Notes 和 References 使用完全独立的标号体系，互不干扰。**
 
-   **5d. 验证**：重建后，三个区段标题下均应有内容。Notes 区段使用字母标号、References 区段使用数字标号、External links 区段使用无序列表。不得存在空区段标题，不得存在标号体系混用。
+   正确重建示例（参考 Wikipedia 原版 The Wind Waker 页面）：
+
+   ```
+   ## 参考资料
+   ### 注释
+   a. 用于游戏北美包装的艺术图之一……
+   b. 日语：ゼルダの伝説 風のタクト……
+   c. 基于80条评论
+
+   ### 参考资料
+   1. 《塞尔达传说 风之杖》说明书。美国：任天堂。2003年。
+   2. Ali, Imran（2012年）。Virtual Landscapes……
+   3. Riendeau, Danielle（2013年）。「The Legend of Zelda: The Wind Waker HD review」……
+   ```
+
+   ❌ **禁止做法**：将 Notes 条目编号为 `1.` `2.` `3.`、References 编号为 `4.` `5.` `6.`（这是将两个独立标号体系错误地混编为一个连续序列）。
+
+   具体规则：
+   - **Notes（注释）**：必须使用字母标号 `a.` `b.` `c.`……从 `a` 开始。即使 Wikipedia 原版注释混合了字母和罗马数字，统一用字母。
+   - **References（参考资料）**：必须使用数字标号 `1.` `2.` `3.`……从 `1` 开始。若 Wikipedia 原版 References 下还有子标题（如 `Citations`、`Works cited`），保留子标题层级，但子标题下的条目仍从 `1` 开始编号。
+   - **External links（外部链接）**：使用无序列表 `- `。
+   - **正文中的引用标记同步更新**：将正文中的 `[^n]` 替换为对应区段的标号。例如，原 `[^4]` 若映射到 References 第 1 条 → 正文中改为 `[1]`；原 `[^1]` 若映射到 Notes 第 1 条 → 正文中改为 `[a]`。
+
+   **5d. 验证（标号体系检查）**：重建后必须逐条检查：
+   1. 三个区段标题下均有内容。不得有空区段标题。
+   2. `### 注释` 下的条目第一个标号必须是 `a.`，后续依次递增（`b.` `c.`……）。
+   3. `### 参考资料` 下的条目第一个标号必须是 `1.`，后续依次递增（`2.` `3.`……）。
+   4. 若发现 Notes 下有条目标号为数字，或 References 下有条目标号为字母，即为标号体系混用，必须回溯修复。
+   5. 正文中不得残留 defuddle 产生的 `[^n]` 格式引用——所有引用标记必须已替换为对应区段的标号。
 
 ### 第三步：生成中文标题与文件名
 
