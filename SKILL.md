@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "3.2.1"
+  version: "3.3.0"
   model: "sonnet"
 ---
 
@@ -62,6 +62,46 @@ metadata:
    - `<br>` → 换行
    - `<hr>` → `---`
    - 原文中的 `&amp;` `&lt;` `&gt;` `&quot;` `&#39;` `&nbsp;` 等 HTML 实体解码
+
+#### C. 提取 Wikipedia 信息表（infobox）
+
+defuddle 会丢弃 Wikipedia 侧栏信息表（`<table class="infobox">`）。对于 Wikipedia 页面，必须在 defuddle 提取正文后，单独补充信息表。
+
+**1. 检测**：若来源为 Wikipedia 且页面是游戏/电影/人物等实体页面（页面首段通常包含 `<table class="infobox">`），执行以下步骤。
+
+**2. 获取原始首段 HTML**：调用 Wikipedia API 获取 section 0（导言段）的原始 HTML：
+```
+WebFetch: https://en.wikipedia.org/w/api.php?action=parse&page=页面名&prop=text&section=0&format=json
+```
+
+**3. 解析信息表**：从返回的 HTML 中提取 `<table class="infobox">`：
+
+   - **表格标题**（`<th class="infobox-title">`）：如游戏名/副标题，放入表格第一行
+   - **图片**（`<td class="infobox-image">` 内的 `<img>`）：提取 `src` 并构造 `![alt](url)` 格式。置于表格上方
+   - **每行**（`<tr>`）：
+     - `<th>` → 标签列（如 Developer、Publisher、Release date），翻译为中文
+     - `<td>` → 值列，文本翻译，链接保留、换行用列表
+   - **嵌套列表**：若 `<td>` 内含 `<ul><li>`，转为 `<br>` 分隔的行内列表或简短的 Markdown 列表
+
+**4. 去除冗余**：排除以下行：
+   - Wikipedia 维护性模板（如 `[edit]` 链接、引用脚注 `[1]`）
+   - 纯装饰性元素
+
+**5. 组装 Markdown**：将信息表转换为两列 Markdown 表格（标签 | 值），表头留空（Wikipedia 风格）：
+
+```markdown
+![封面图片](url)
+
+| | |
+|---|---|
+| 开发商 | 小岛制作 |
+| 发行商 | 科乐美 |
+| ...
+```
+
+**6. 插入位置**：将信息表插入到文档的 `# 标题` 和正文第一段之间。
+
+**7. 非 Wikipedia 页面**：跳过此步骤。defuddle 对大部分非 Wiki 站点能正确保留文章内嵌的信息框。
 
 ### 第二步：清洗与校验 Markdown
 
