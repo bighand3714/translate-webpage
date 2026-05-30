@@ -2,7 +2,7 @@
 name: translate-webpage
 description: "Translate webpage content (URL or local HTML) to clean Chinese Markdown for Obsidian. Optimized for Wiki articles and interviews — preserves image links and citation sources."
 metadata:
-  version: "2.4.0"
+  version: "2.5.0"
   model: "sonnet"
 ---
 
@@ -91,9 +91,29 @@ metadata:
 ### 第三步：生成中文标题与文件名
 
 1. 从页面 `<title>` 或 `<h1>` 提取原标题
-2. 将标题翻译为中文作为文件名
+2. 将标题翻译为中文
 3. 文件名去除非法字符：`\ / : * ? " < > |`
-4. 文件名格式：`{中文标题}.md`
+
+4. **提取来源站点前缀**：从 URL 域名中提取简短标识。规则：
+
+   | 域名包含 | 前缀 | 示例 |
+   |----------|------|------|
+   | `wikipedia.org` | `wiki` | `wiki-塞尔达传说.md` |
+   | `fandom.com` | `fandom` | `fandom-桑给巴尔事件.md` |
+   | `ign.com` | `ign` | `ign-某某访谈.md` |
+   | `nintendo.co.jp` / `nintendo.com` | `nintendo` | `nintendo-青沼英二访谈.md` |
+   | `gamespot.com` | `gamespot` | — |
+   | `eurogamer.net` | `eurogamer` | — |
+   | `polygon.com` | `polygon` | — |
+   | `kotaku.com` | `kotaku` | — |
+   | `siliconera.com` | `siliconera` | — |
+   | `youtube.com` / `youtu.be` | `youtube` | — |
+   | `web.archive.org` | 从存档的目标 URL 提取前缀 | — |
+   | 其他域名 | 取域名中第一个点之前的部分 | `example-xxx.md` |
+
+   若为本地 HTML 文件无 URL：跳过前缀，仅用中文标题。
+
+5. 文件名格式：`{前缀}-{中文标题}.md`。若同名文件已存在，加数字后缀（`-2`、`-3`…）
 
 ### 第四步：通过子 Agent 并行翻译
 
